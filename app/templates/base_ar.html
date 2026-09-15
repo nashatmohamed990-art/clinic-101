@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ clinic_name_ar }}{% endblock %}</title>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
+    <meta name="theme-color" content="#1c3f6e">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="الفايدي">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#eef3f9', 100: '#d7e3f0', 200: '#b0c7e2', 300: '#82a4cc', 400: '#5580b3', 500: '#356099', 600: '#274a7d', 700: '#1c3a68', 800: '#152c50', 900: '#0d1f3a', 950: '#081527' },
+                        accent: { 50: '#eef9fb', 100: '#d3eff4', 200: '#a8dfe9', 300: '#78c8d8', 400: '#50a0b0', 500: '#3d8a9c', 600: '#2f7284', 700: '#265c6b', 800: '#1f4a56', 900: '#183a43' }
+                    },
+                    fontFamily: {
+                        arabic: ['Noto Sans SC', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Noto Sans Arabic', 'Noto Sans SC', sans-serif; }
+        body { direction: rtl; text-align: right; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen">
+    {% block header %}
+    <header class="bg-gradient-to-l from-primary-900 to-primary-700 text-white shadow-lg">
+        <div class="max-w-4xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="{{ clinic_name_ar }}"
+                        class="w-12 h-12 rounded-full ring-2 ring-white/40 shadow-md shrink-0">
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-bold">{{ clinic_name_ar }}</h1>
+                        <p class="text-primary-200 text-sm">{{ doctor_name }} - {{ doctor_title }}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    {% if current_user and current_user.is_authenticated %}
+                        {% if current_user.role == 'assistant' %}
+                            <a href="{{ url_for('assistant.dashboard') }}" class="text-white hover:text-primary-200 text-sm">لوحة التحكم</a>
+                        {% elif current_user.role == 'doctor' %}
+                            <a href="{{ url_for('doctor.dashboard') }}" class="text-white hover:text-primary-200 text-sm">Dashboard</a>
+                        {% endif %}
+                        <a href="{{ url_for('auth.change_password') }}" class="hover:bg-white/10 px-3 py-1.5 rounded-lg text-sm">كلمة المرور</a>
+                        <a href="{{ url_for('auth.logout') }}" class="bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-sm">خروج</a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-sm">دخول الموظفين</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+    {% endblock %}
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="max-w-4xl mx-auto px-4 mt-4">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} mb-2 px-4 py-3 rounded-lg text-sm shadow-sm
+            {% if category == 'success' %}bg-green-100 text-green-800 border border-green-300
+            {% elif category == 'danger' %}bg-red-100 text-red-800 border border-red-300
+            {% elif category == 'warning' %}bg-yellow-100 text-yellow-800 border border-yellow-300
+            {% elif category == 'info' %}bg-blue-100 text-blue-800 border border-blue-300
+            {% else %}bg-gray-100 text-gray-800 border border-gray-300{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <main class="max-w-4xl mx-auto px-4 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block footer %}
+    <footer class="text-center text-gray-400 text-xs py-6 mt-8 border-t border-gray-200">
+        &copy; 2024 {{ clinic_name_ar }} - جميع الحقوق محفوظة
+    </footer>
+    {% endblock %}
+
+    {% block extra_scripts %}{% endblock %}
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/service-worker.js').catch(() => {});
+            });
+        }
+    </script>
+</body>
+</html>

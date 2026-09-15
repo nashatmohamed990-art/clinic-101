@@ -1,0 +1,196 @@
+{% extends "base_en.html" %}
+{% block title %}{{ patient.full_name }} - {{ clinic_name_en }}{% endblock %}
+
+{% block content %}
+<!-- Back + Header -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-3">
+        <a href="{{ url_for('doctor.patients') }}" class="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center hover:bg-gray-200 transition">
+            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </a>
+        <div>
+            <h1 class="text-xl font-bold text-navy-900">{{ patient.full_name }}</h1>
+            <p class="text-sm text-gray-500">{{ patient.phone }} &middot; {{ patient.display_gender }} &middot; Age {{ patient.age or '?' }} &middot; ID #{{ patient.id }}</p>
+        </div>
+    </div>
+    <div class="flex gap-2">
+        <a href="{{ url_for('doctor.medical_record', patient_id=patient.id) }}" class="px-3 py-2 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700 transition">Medical Record</a>
+        <a href="{{ url_for('doctor.create_prescription', patient_id=patient.id) }}" class="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm hover:bg-amber-600 transition">Prescription</a>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="border-b border-gray-200 mb-6">
+    <nav class="flex gap-6 -mb-px" id="tabs">
+        <button onclick="showTab('appointments')" class="tab-btn py-3 px-1 text-sm font-medium border-b-2 border-teal-600 text-teal-600" data-tab="appointments">Appointments ({{ appointments|length }})</button>
+        <button onclick="showTab('medical')" class="tab-btn py-3 px-1 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="medical">Medical Record</button>
+        <button onclick="showTab('surgeries')" class="tab-btn py-3 px-1 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="surgeries">Surgeries ({{ surgeries|length }})</button>
+        <button onclick="showTab('files')" class="tab-btn py-3 px-1 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="files">Files ({{ files|length }})</button>
+        <button onclick="showTab('prescriptions')" class="tab-btn py-3 px-1 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="prescriptions">Rx ({{ prescriptions|length }})</button>
+    </nav>
+</div>
+
+<!-- Tab: Appointments -->
+<div id="tab-appointments" class="tab-content">
+    {% if appointments %}
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-100">
+                <tr>
+                    <th class="text-right px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase">Date</th>
+                    <th class="text-right px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase">Time</th>
+                    <th class="text-right px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                    <th class="text-right px-5 py-2.5 text-xs font-semibold text-gray-500 uppercase">Complaint</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                {% for a in appointments %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-5 py-2.5 text-sm">{{ a.appointment_date.strftime('%Y-%m-%d') }}</td>
+                    <td class="px-5 py-2.5 text-sm font-mono">{{ a.time_slot if not a.is_waitlisted else 'Waitlist' }}</td>
+                    <td class="px-5 py-2.5">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium
+                            {% if a.status == 'pending' %}bg-yellow-100 text-yellow-700
+                            {% elif a.status == 'confirmed' %}bg-blue-100 text-blue-700
+                            {% elif a.status == 'completed' %}bg-green-100 text-green-700
+                            {% elif a.status == 'cancelled' %}bg-red-100 text-red-700
+                            {% else %}bg-gray-100 text-gray-600{% endif %}">{{ a.status|capitalize }}</span>
+                    </td>
+                    <td class="px-5 py-2.5 text-sm text-gray-600 max-w-xs truncate">{{ a.complaint or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-gray-400 text-sm text-center py-8">No appointments recorded.</p>
+    {% endif %}
+</div>
+
+<!-- Tab: Medical Record -->
+<div id="tab-medical" class="tab-content hidden">
+    {% if medical_record %}
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-semibold text-navy-900">Medical Sheet</h3>
+            <a href="{{ url_for('doctor.medical_record', patient_id=patient.id) }}" class="text-teal-600 hover:text-teal-700 text-sm font-medium">Edit &rarr;</a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for field, label in [('personal_info','Personal Info'),('medical_history','Medical History'),('current_complaint','Current Complaint'),('clinical_examination','Clinical Examination'),('diagnosis','Diagnosis'),('investigations','Investigations'),('treatment_plan','Treatment Plan'),('follow_up_notes','Follow-up'),('additional_notes','Notes')] %}
+            <div class="{% if loop.index0 >= 6 %}md:col-span-2{% endif %}">
+                <p class="text-xs font-semibold text-gray-400 uppercase mb-1">{{ label }}</p>
+                <div class="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 whitespace-pre-wrap min-h-[40px]">{{ medical_record[field] or '—' }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        <p class="text-xs text-gray-400 mt-4">Last updated: {{ medical_record.updated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+        <p class="text-gray-500 mb-3">No medical record yet.</p>
+        <a href="{{ url_for('doctor.medical_record', patient_id=patient.id) }}" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm hover:bg-teal-700 transition">Create Medical Record</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Tab: Surgeries -->
+<div id="tab-surgeries" class="tab-content hidden">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="font-semibold text-navy-900">Surgeries</h3>
+        <a href="{{ url_for('doctor.add_surgery', patient_id=patient.id) }}" class="px-3 py-1.5 bg-navy-800 text-white rounded-lg text-sm hover:bg-navy-700 transition">+ Add Surgery</a>
+    </div>
+    {% if surgeries %}
+    <div class="space-y-3">
+        {% for s in surgeries %}
+        <div class="bg-white rounded-xl border border-gray-100 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+                <p class="font-medium text-navy-900">{{ s.surgery_type }}</p>
+                <p class="text-sm text-gray-500">{{ s.planned_date.strftime('%Y-%m-%d') }}{% if s.planned_time %} at {{ s.planned_time }}{% endif %}</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="px-2.5 py-1 rounded-full text-xs font-medium
+                    {% if s.status == 'scheduled' %}bg-blue-100 text-blue-700
+                    {% elif s.status == 'done' %}bg-green-100 text-green-700
+                    {% elif s.status == 'cancelled' %}bg-red-100 text-red-700
+                    {% else %}bg-amber-100 text-amber-700{% endif %}">{{ s.status_display }}</span>
+                <a href="{{ url_for('doctor.edit_surgery', surgery_id=s.id) }}" class="text-teal-600 hover:text-teal-700 text-sm">Edit</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-400 text-sm text-center py-8">No surgeries recorded.</p>
+    {% endif %}
+</div>
+
+<!-- Tab: Files -->
+<div id="tab-files" class="tab-content hidden">
+    <form method="POST" action="{{ url_for('doctor.upload_file', patient_id=patient.id) }}" enctype="multipart/form-data" class="mb-4 flex flex-col sm:flex-row gap-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="file" name="files" multiple required class="flex-1 text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
+        <button type="submit" class="px-4 py-1.5 bg-navy-800 text-white rounded-lg text-sm hover:bg-navy-700 transition">Upload</button>
+    </form>
+    {% if files %}
+    <div class="space-y-2">
+        {% for f in files %}
+        <div class="bg-white rounded-xl border border-gray-100 p-3 flex items-center justify-between">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-sm font-medium text-navy-900 truncate">{{ f.original_filename }}</p>
+                    <p class="text-xs text-gray-400">{{ f.uploaded_at.strftime('%Y-%m-%d %H:%M') }} &middot; {{ (f.file_size / 1024)|round(1) }} KB</p>
+                </div>
+            </div>
+            <div class="flex gap-2 shrink-0">
+                <a href="{{ url_for('doctor.download_file', file_id=f.id) }}" class="text-teal-600 hover:text-teal-700 text-sm">Download</a>
+                <form method="POST" action="{{ url_for('doctor.delete_file', file_id=f.id) }}" onsubmit="return confirm('Delete this file?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="text-red-500 hover:text-red-600 text-sm">Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-400 text-sm text-center py-8">No files uploaded yet.</p>
+    {% endif %}
+</div>
+
+<!-- Tab: Prescriptions -->
+<div id="tab-prescriptions" class="tab-content hidden">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="font-semibold text-navy-900">Prescriptions</h3>
+        <a href="{{ url_for('doctor.create_prescription', patient_id=patient.id) }}" class="px-3 py-1.5 bg-amber-500 text-white rounded-lg text-sm hover:bg-amber-600 transition">+ New Prescription</a>
+    </div>
+    {% if prescriptions %}
+    <div class="space-y-2">
+        {% for rx in prescriptions %}
+        <div class="bg-white rounded-xl border border-gray-100 p-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-gray-400">{{ rx.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                <a href="{{ url_for('doctor.prescription_pdf', prescription_id=rx.id) }}" class="text-teal-600 hover:text-teal-700 text-sm font-medium">Download PDF</a>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3 text-sm text-gray-700 whitespace-pre-wrap max-h-40 overflow-y-auto">{{ rx.content }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-400 text-sm text-center py-8">No prescriptions yet.</p>
+    {% endif %}
+</div>
+
+<script>
+function showTab(name) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(el => {
+        el.classList.remove('border-teal-600', 'text-teal-600');
+        el.classList.add('border-transparent', 'text-gray-500');
+    });
+    document.getElementById('tab-' + name).classList.remove('hidden');
+    document.querySelector(`[data-tab="${name}"]`).classList.add('border-teal-600', 'text-teal-600');
+    document.querySelector(`[data-tab="${name}"]`).classList.remove('border-transparent', 'text-gray-500');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ clinic_name_en }}{% endblock %}</title>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/apple-touch-icon.png') }}">
+    <meta name="theme-color" content="#0d1f3a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: { 50: '#eef3f9', 100: '#d7e3f0', 200: '#b0c7e2', 300: '#82a4cc', 400: '#5580b3', 500: '#356099', 600: '#274a7d', 700: '#1c3a68', 800: '#152c50', 900: '#0d1f3a', 950: '#081527' },
+                        teal: { 50: '#eef9fb', 100: '#d3eff4', 200: '#a8dfe9', 300: '#78c8d8', 400: '#50a0b0', 500: '#3d8a9c', 600: '#2f7284', 700: '#265c6b', 800: '#1f4a56', 900: '#183a43' },
+                        amber: { 400: '#fbbf24', 500: '#f59e0b' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Inter', system-ui, sans-serif; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Top navigation -->
+    <nav class="bg-gradient-to-l from-navy-900 to-navy-800 text-white shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Title -->
+                <div class="flex items-center gap-3">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="{{ clinic_name_en }}"
+                        class="w-10 h-10 rounded-full ring-2 ring-white/30 shadow-md shrink-0">
+                    <div>
+                        <h1 class="text-base font-semibold leading-tight">{{ clinic_name_en }}</h1>
+                        <p class="text-navy-300 text-xs">{{ doctor_name }} &middot; {{ doctor_title }}</p>
+                    </div>
+                </div>
+
+                <!-- Navigation links -->
+                <div class="hidden md:flex items-center gap-1">
+                    <a href="{{ url_for('doctor.dashboard') }}" class="px-3 py-2 rounded-lg text-sm hover:bg-navy-800 transition">Dashboard</a>
+                    <a href="{{ url_for('doctor.patients') }}" class="px-3 py-2 rounded-lg text-sm hover:bg-navy-800 transition">Patients</a>
+                    <a href="{{ url_for('doctor.appointments') }}" class="px-3 py-2 rounded-lg text-sm hover:bg-navy-800 transition">Appointments</a>
+                    <a href="{{ url_for('doctor.surgeries') }}" class="px-3 py-2 rounded-lg text-sm hover:bg-navy-800 transition">Surgeries</a>
+                    <a href="{{ url_for('doctor.inventory') }}" class="px-3 py-2 rounded-lg text-sm hover:bg-navy-800 transition">Inventory</a>
+                    <a href="{{ url_for('doctor.book_appointment_page') }}" class="px-3 py-2 rounded-lg text-sm bg-teal-600 hover:bg-teal-700 transition">+ Book</a>
+                </div>
+
+                <!-- User menu -->
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-navy-300 hidden sm:inline">{{ current_user.full_name if current_user else '' }}</span>
+                    <a href="{{ url_for('auth.change_password') }}" class="px-3 py-1.5 hover:bg-navy-800 rounded-lg text-xs transition">Password</a>
+                    <a href="{{ url_for('auth.logout') }}" class="px-3 py-1.5 bg-navy-800 hover:bg-navy-700 rounded-lg text-xs transition">Logout</a>
+                    <!-- Mobile menu button -->
+                    <button onclick="document.getElementById('mobile-menu').classList.toggle('hidden')" class="md:hidden p-2 rounded-lg hover:bg-navy-800">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile menu -->
+            <div id="mobile-menu" class="hidden md:hidden pb-3 space-y-1">
+                <a href="{{ url_for('doctor.dashboard') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-navy-800">Dashboard</a>
+                <a href="{{ url_for('doctor.patients') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-navy-800">Patients</a>
+                <a href="{{ url_for('doctor.appointments') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-navy-800">Appointments</a>
+                <a href="{{ url_for('doctor.surgeries') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-navy-800">Surgeries</a>
+                <a href="{{ url_for('doctor.inventory') }}" class="block px-3 py-2 rounded-lg text-sm hover:bg-navy-800">Inventory</a>
+                <a href="{{ url_for('doctor.book_appointment_page') }}" class="block px-3 py-2 rounded-lg text-sm bg-teal-600">+ Book Appointment</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 mt-4">
+        {% for category, message in messages %}
+        <div class="mb-2 px-4 py-3 rounded-lg text-sm shadow-sm flex items-center gap-2
+            {% if category == 'success' %}bg-green-50 text-green-800 border border-green-200
+            {% elif category == 'danger' %}bg-red-50 text-red-800 border border-red-200
+            {% elif category == 'warning' %}bg-amber-50 text-amber-800 border border-amber-200
+            {% elif category == 'info' %}bg-blue-50 text-blue-800 border border-blue-200
+            {% else %}bg-gray-50 text-gray-800 border border-gray-200{% endif %}">
+            {% if category == 'success' %}<svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+            {% elif category == 'danger' %}<svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
+            {% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block extra_scripts %}{% endblock %}
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/service-worker.js').catch(() => {});
+            });
+        }
+    </script>
+</body>
+</html>

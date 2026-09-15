@@ -1,0 +1,64 @@
+{% extends "base_en.html" %}
+{% block title %}Surgeries - {{ clinic_name_en }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <h1 class="text-xl font-bold text-navy-900">Surgeries</h1>
+    <div class="flex gap-2">
+        <form method="GET" class="flex gap-2">
+            <select name="status" onchange="this.form.submit()" class="px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                <option value="scheduled" {% if status_filter == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                <option value="done" {% if status_filter == 'done' %}selected{% endif %}>Done</option>
+                <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                <option value="postponed" {% if status_filter == 'postponed' %}selected{% endif %}>Postponed</option>
+            </select>
+        </form>
+    </div>
+</div>
+
+{% if surgeries %}
+<div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-100">
+                <tr>
+                    <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Patient</th>
+                    <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Surgery</th>
+                    <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Date</th>
+                    <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Time</th>
+                    <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                    <th class="px-5 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                {% for s in surgeries %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-5 py-3">
+                        <a href="{{ url_for('doctor.patient_detail', patient_id=s.patient_id) }}" class="font-medium text-navy-900 hover:text-teal-600 transition text-sm">{{ s.patient.full_name }}</a>
+                    </td>
+                    <td class="px-5 py-3 text-sm text-gray-700">{{ s.surgery_type }}</td>
+                    <td class="px-5 py-3 text-sm text-gray-600">{{ s.planned_date.strftime('%Y-%m-%d') }}</td>
+                    <td class="px-5 py-3 text-sm font-mono text-gray-600">{{ s.planned_time or '-' }}</td>
+                    <td class="px-5 py-3">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-medium
+                            {% if s.status == 'scheduled' %}bg-blue-100 text-blue-700
+                            {% elif s.status == 'done' %}bg-green-100 text-green-700
+                            {% elif s.status == 'cancelled' %}bg-red-100 text-red-700
+                            {% else %}bg-amber-100 text-amber-700{% endif %}">{{ s.status_display }}</span>
+                    </td>
+                    <td class="px-5 py-3">
+                        <a href="{{ url_for('doctor.edit_surgery', surgery_id=s.id) }}" class="text-teal-600 hover:text-teal-700 text-sm">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="bg-white rounded-xl border border-gray-100 p-12 text-center">
+    <p class="text-gray-500">No surgeries found.</p>
+</div>
+{% endif %}
+{% endblock %}

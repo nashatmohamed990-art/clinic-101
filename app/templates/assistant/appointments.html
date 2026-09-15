@@ -1,0 +1,237 @@
+{% extends "base_ar.html" %}
+{% block title %}المواعيد - {{ clinic_name_ar }}{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+    <div>
+        <h2 class="text-2xl font-bold text-gray-800">جميع المواعيد</h2>
+        <p class="text-gray-500 text-sm mt-1">عرض وإدارة جميع مواعيد العيادة</p>
+    </div>
+    <div class="flex gap-2">
+        <a href="{{ url_for('assistant.dashboard') }}" class="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition border border-gray-200 shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            لوحة التحكم
+        </a>
+        <a href="{{ url_for('assistant.search_patients') }}" class="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition border border-gray-200 shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            بحث المرضى
+        </a>
+    </div>
+</div>
+
+<!-- Filters Card -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+    <form method="GET" action="{{ url_for('assistant.appointments') }}" class="flex flex-wrap gap-3 items-end">
+        <!-- Search -->
+        <div class="flex-1 min-w-[200px]">
+            <label class="block text-xs font-medium text-gray-500 mb-1">بحث</label>
+            <input type="text" name="search" value="{{ search }}" placeholder="اسم المريض أو رقم الموبايل..."
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition">
+        </div>
+        <!-- Status -->
+        <div class="w-full sm:w-auto">
+            <label class="block text-xs font-medium text-gray-500 mb-1">الحالة</label>
+            <select name="status" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition bg-white">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>الكل</option>
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>في الانتظار</option>
+                <option value="confirmed" {% if status_filter == 'confirmed' %}selected{% endif %}>مؤكد</option>
+                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>مكتمل</option>
+                <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>ملغي</option>
+                <option value="no_show" {% if status_filter == 'no_show' %}selected{% endif %}>لم يحضر</option>
+            </select>
+        </div>
+        <!-- Date From -->
+        <div class="w-full sm:w-auto">
+            <label class="block text-xs font-medium text-gray-500 mb-1">من تاريخ</label>
+            <input type="date" name="date_from" value="{{ date_from }}"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition">
+        </div>
+        <!-- Date To -->
+        <div class="w-full sm:w-auto">
+            <label class="block text-xs font-medium text-gray-500 mb-1">إلى تاريخ</label>
+            <input type="date" name="date_to" value="{{ date_to }}"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition">
+        </div>
+        <!-- Submit -->
+        <button type="submit"
+            class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+            بحث
+        </button>
+    </form>
+</div>
+
+<!-- Results Count -->
+<div class="flex items-center justify-between mb-3">
+    <span class="text-sm text-gray-500">عدد النتائج: <strong class="text-gray-700">{{ appointments|length }}</strong></span>
+</div>
+
+<!-- Appointments List -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    {% if appointments %}
+    <!-- Desktop Table -->
+    <div class="hidden md:block overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
+                    <th class="px-4 py-3 text-right font-medium">المريض</th>
+                    <th class="px-4 py-3 text-right font-medium">الفرع</th>
+                    <th class="px-4 py-3 text-right font-medium">اليوم</th>
+                    <th class="px-4 py-3 text-right font-medium">الساعة</th>
+                    <th class="px-4 py-3 text-right font-medium">الحالة</th>
+                    <th class="px-4 py-3 text-right font-medium">الشكوى</th>
+                    <th class="px-4 py-3 text-right font-medium">إجراء</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+                {% for appointment in appointments %}
+                <tr class="hover:bg-gray-50 transition" id="row-{{ appointment.id }}">
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('assistant.patient_detail', patient_id=appointment.patient.id) }}" class="font-medium text-gray-800 hover:text-primary-600 transition">
+                            {{ appointment.patient.full_name }}
+                        </a>
+                        <p class="text-xs text-gray-400" dir="ltr" style="text-align: left;">{{ appointment.patient.phone }}</p>
+                    </td>
+                    <td class="px-4 py-3 text-gray-600">{{ appointment.branch_display_ar }}</td>
+                    <td class="px-4 py-3 text-gray-600">{{ appointment.appointment_date.strftime('%Y/%m/%d') }}</td>
+                    <td class="px-4 py-3">
+                        {% if appointment.is_waitlisted %}
+                        <span class="text-xs px-2.5 py-1 rounded-full font-medium bg-amber-100 text-amber-700">قائمة انتظار</span>
+                        {% else %}
+                        <span class="font-bold text-primary-600" dir="ltr">{{ appointment.time_slot }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="text-xs px-2.5 py-1 rounded-full font-medium
+                            {% if appointment.status == 'pending' %}bg-yellow-100 text-yellow-700
+                            {% elif appointment.status == 'confirmed' %}bg-blue-100 text-blue-700
+                            {% elif appointment.status == 'completed' %}bg-green-100 text-green-700
+                            {% elif appointment.status == 'cancelled' %}bg-red-100 text-red-700
+                            {% elif appointment.status == 'no_show' %}bg-gray-200 text-gray-600
+                            {% else %}bg-gray-100 text-gray-600{% endif %}">
+                            {{ appointment.status_display_ar }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-500 text-xs max-w-[200px] truncate">{{ appointment.complaint or '-' }}</td>
+                    <td class="px-4 py-3 space-x-2 space-x-reverse">
+                        {% if appointment.is_waitlisted %}
+                        <a href="{{ url_for('assistant.assign_waitlist_page', appointment_id=appointment.id) }}" class="text-xs text-amber-600 hover:text-amber-700 font-medium transition">
+                            تعيين ميعاد
+                        </a>
+                        {% endif %}
+                        <button onclick="toggleStatusForm({{ appointment.id }})" class="text-xs text-primary-600 hover:text-primary-700 font-medium transition">
+                            تغيير الحالة
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile Cards -->
+            <div class="md:hidden divide-y divide-gray-50">
+                {% for appointment in appointments %}
+                <div class="px-4 py-4">
+                    <div class="flex items-start justify-between mb-2">
+                        <div>
+                            <a href="{{ url_for('assistant.patient_detail', patient_id=appointment.patient.id) }}" class="font-semibold text-gray-800 hover:text-primary-600 transition text-sm">
+                                {{ appointment.patient.full_name }}
+                            </a>
+                            <p class="text-xs text-gray-400 mt-0.5" dir="ltr" style="text-align: left;">{{ appointment.patient.phone }}</p>
+                        </div>
+                        <span class="text-xs px-2.5 py-1 rounded-full font-medium
+                            {% if appointment.status == 'pending' %}bg-yellow-100 text-yellow-700
+                            {% elif appointment.status == 'confirmed' %}bg-blue-100 text-blue-700
+                            {% elif appointment.status == 'completed' %}bg-green-100 text-green-700
+                            {% elif appointment.status == 'cancelled' %}bg-red-100 text-red-700
+                            {% elif appointment.status == 'no_show' %}bg-gray-200 text-gray-600
+                            {% else %}bg-gray-100 text-gray-600{% endif %}">
+                            {{ appointment.status_display_ar }}
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+                        <span>{{ appointment.branch_display_ar }}</span>
+                        <span>{{ appointment.appointment_date.strftime('%Y/%m/%d') }}</span>
+                        {% if appointment.is_waitlisted %}
+                        <span class="font-bold text-amber-600">قائمة انتظار</span>
+                        {% else %}
+                        <span class="font-bold text-primary-600" dir="ltr">{{ appointment.time_slot }}</span>
+                        {% endif %}
+                    </div>
+                    {% if appointment.complaint %}
+                    <p class="text-xs text-gray-400 mt-1 truncate">{{ appointment.complaint }}</p>
+                    {% endif %}
+                    <div class="mt-3 flex gap-3">
+                        {% if appointment.is_waitlisted %}
+                        <a href="{{ url_for('assistant.assign_waitlist_page', appointment_id=appointment.id) }}" class="text-xs text-amber-600 hover:text-amber-700 font-medium transition">
+                            تعيين ميعاد
+                        </a>
+                        {% endif %}
+                        <button onclick="toggleStatusForm({{ appointment.id }})" class="text-xs text-primary-600 hover:text-primary-700 font-medium transition">
+                            تغيير الحالة
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+    {% else %}
+    <div class="text-center py-16">
+        <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+        <p class="text-gray-400 font-medium">لا توجد مواعيد</p>
+        <p class="text-gray-300 text-sm mt-1">حاول تغيير معايير البحث</p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Toggle inline status update form
+function toggleStatusForm(appointmentId) {
+    const existing = document.getElementById('status-form-' + appointmentId);
+    if (existing) {
+        existing.remove();
+        return;
+    }
+
+    // Remove any other open forms
+    document.querySelectorAll('[id^="status-form-"]').forEach(el => el.remove());
+
+    const row = document.getElementById('row-' + appointmentId);
+    if (!row) return;
+
+    const formHtml = `
+        <tr id="status-form-${appointmentId}">
+            <td colspan="7" class="px-4 py-3 bg-primary-50">
+                <form method="POST" action="/assistant/appointment/${appointmentId}/update-status">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="flex flex-wrap items-end gap-3">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">الحالة الجديدة</label>
+                        <select name="status" class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
+                            <option value="pending">في الانتظار</option>
+                            <option value="confirmed">مؤكد</option>
+                            <option value="completed">مكتمل</option>
+                            <option value="cancelled">ملغي</option>
+                            <option value="no_show">لم يحضر</option>
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-[150px]">
+                        <label class="block text-xs text-gray-500 mb-1">ملاحظة (اختياري)</label>
+                        <textarea name="note" rows="1" placeholder="أضف ملاحظة..."
+                            class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 w-full resize-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"></textarea>
+                    </div>
+                    <button type="submit" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition">تحديث</button>
+                    <button type="button" onclick="toggleStatusForm(${appointmentId})" class="text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg text-sm transition">إلغاء</button>
+                </div>
+                </form>
+            </td>
+        </tr>
+    `;
+
+    row.insertAdjacentHTML('afterend', formHtml);
+}
+</script>
+{% endblock %}

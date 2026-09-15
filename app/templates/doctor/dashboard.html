@@ -1,0 +1,137 @@
+{% extends "base_en.html" %}
+{% block title %}Dashboard - {{ clinic_name_en }}{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Today's Schedule</p>
+                <p class="text-2xl font-bold text-navy-900 mt-1">{{ today_apps|length }}</p>
+            </div>
+            <div class="w-11 h-11 bg-blue-50 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+        </div>
+    </div>
+    <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Total Patients</p>
+                <p class="text-2xl font-bold text-navy-900 mt-1">{{ total_patients }}</p>
+            </div>
+            <div class="w-11 h-11 bg-teal-50 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </div>
+        </div>
+    </div>
+    <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Scheduled Surgeries</p>
+                <p class="text-2xl font-bold text-navy-900 mt-1">{{ total_surgeries }}</p>
+            </div>
+            <div class="w-11 h-11 bg-amber-50 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            </div>
+        </div>
+    </div>
+    <div class="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500">Upcoming</p>
+                <p class="text-2xl font-bold text-navy-900 mt-1">{{ upcoming_apps|length }}</p>
+            </div>
+            <div class="w-11 h-11 bg-purple-50 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Today's Appointments -->
+    <div class="lg:col-span-2">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 class="font-semibold text-navy-900">Today's Appointments</h2>
+                <span class="text-xs text-gray-400">{{ today.strftime('%A, %B %d, %Y') }}</span>
+            </div>
+            {% if today_apps %}
+            <div class="divide-y divide-gray-50">
+                {% for appt in today_apps %}
+                <div class="px-5 py-3.5 hover:bg-gray-50 transition flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 bg-navy-100 rounded-lg flex items-center justify-center text-navy-700 font-bold text-sm shrink-0">
+                            {{ appt.patient.full_name[0] }}
+                        </div>
+                        <div class="min-w-0">
+                            <a href="{{ url_for('doctor.patient_detail', patient_id=appt.patient_id) }}" class="font-medium text-navy-900 hover:text-teal-600 transition truncate block">
+                                {{ appt.patient.full_name }}
+                            </a>
+                            <p class="text-xs text-gray-400">{{ appt.patient.phone }} &middot; {{ appt.patient.display_gender }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-xs text-gray-400">{{ appt.branch_display_en }}</span>
+                        {% if appt.is_waitlisted %}
+                        <span class="text-sm font-semibold text-amber-600">Waitlist</span>
+                        {% else %}
+                        <span class="text-sm font-mono font-semibold text-navy-700">{{ appt.time_slot }}</span>
+                        {% endif %}
+                        <span class="px-2 py-0.5 rounded-full text-xs font-medium
+                            {% if appt.status == 'pending' %}bg-yellow-100 text-yellow-700
+                            {% elif appt.status == 'confirmed' %}bg-blue-100 text-blue-700
+                            {% elif appt.status == 'completed' %}bg-green-100 text-green-700
+                            {% elif appt.status == 'cancelled' %}bg-red-100 text-red-700
+                            {% else %}bg-gray-100 text-gray-600{% endif %}">
+                            {{ appt.status|capitalize }}
+                        </span>
+                        <form method="POST" action="{{ url_for('doctor.update_appointment_status', appointment_id=appt.id) }}" class="inline">
+                            <select name="status" onchange="this.form.submit()" class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white">
+                                <option value="" disabled selected>--</option>
+                                <option value="confirmed" {% if appt.status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                                <option value="completed" {% if appt.status == 'completed' %}selected{% endif %}>Completed</option>
+                                <option value="no_show" {% if appt.status == 'no_show' %}selected{% endif %}>No Show</option>
+                                <option value="cancelled" {% if appt.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            </select>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="px-5 py-12 text-center text-gray-400">
+                <svg class="w-10 h-10 mx-auto mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <p class="text-sm">No appointments today</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Upcoming Appointments -->
+    <div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
+            <div class="px-5 py-4 border-b border-gray-100">
+                <h2 class="font-semibold text-navy-900">Upcoming</h2>
+            </div>
+            {% if upcoming_apps %}
+            <div class="divide-y divide-gray-50">
+                {% for appt in upcoming_apps[:8] %}
+                <a href="{{ url_for('doctor.patient_detail', patient_id=appt.patient_id) }}" class="block px-5 py-3 hover:bg-gray-50 transition">
+                    <p class="font-medium text-sm text-navy-900">{{ appt.patient.full_name }}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ appt.appointment_date.strftime('%b %d') }} at {{ appt.time_slot }}</p>
+                </a>
+                {% endfor %}
+            </div>
+            <div class="px-5 py-3 border-t border-gray-100">
+                <a href="{{ url_for('doctor.appointments') }}" class="text-teal-600 hover:text-teal-700 text-sm font-medium">View all &rarr;</a>
+            </div>
+            {% else %}
+            <div class="px-5 py-8 text-center text-gray-400 text-sm">No upcoming appointments</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

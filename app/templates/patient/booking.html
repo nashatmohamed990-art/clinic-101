@@ -1,0 +1,285 @@
+{% extends "base_ar.html" %}
+{% block title %}حجز موعد - {{ clinic_name_ar }}{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <!-- Hero Section -->
+    <div class="text-center mb-6">
+        <div class="inline-flex items-center gap-2 bg-primary-50 text-primary-700 px-4 py-1.5 rounded-full text-sm font-medium mb-3">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            حجز موعد جديد
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800">احجز موعدك الآن</h2>
+        <p class="text-gray-500 text-sm mt-1">املأ البيانات التالية لحجز موعد مع د. هشام</p>
+    </div>
+
+    <!-- Booking Form -->
+    <form method="POST" action="{{ url_for('patient.book') }}" id="bookingForm" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <!-- Full Name -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">الاسم الكامل <span class="text-red-500">*</span></label>
+            <input type="text" name="full_name" required
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
+                placeholder="مثال: أحمد محمد علي">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <!-- Phone -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">رقم الموبايل <span class="text-red-500">*</span></label>
+                <input type="tel" name="phone" required dir="ltr" style="text-align:left"
+                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
+                    placeholder="01012345678">
+            </div>
+            <!-- Age -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">السن <span class="text-red-500">*</span></label>
+                <input type="number" name="age" required min="1" max="150"
+                    class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition"
+                    placeholder="35">
+            </div>
+        </div>
+
+        <!-- Gender -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">النوع <span class="text-red-500">*</span></label>
+            <div class="flex gap-4">
+                <label class="flex-1 cursor-pointer">
+                    <input type="radio" name="gender" value="ذكر" required class="peer hidden">
+                    <div class="peer-checked:bg-primary-50 peer-checked:border-primary-500 peer-checked:text-primary-700 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-center text-sm font-medium transition hover:bg-gray-50">
+                        ذكر
+                    </div>
+                </label>
+                <label class="flex-1 cursor-pointer">
+                    <input type="radio" name="gender" value="أنثى" required class="peer hidden">
+                    <div class="peer-checked:bg-primary-50 peer-checked:border-primary-500 peer-checked:text-primary-700 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-center text-sm font-medium transition hover:bg-gray-50">
+                        أنثى
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Branch / Center -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">الفرع <span class="text-red-500">*</span></label>
+            <div class="flex gap-4">
+                {% for b in branches %}
+                <label class="flex-1 cursor-pointer">
+                    <input type="radio" name="branch" value="{{ b.key }}" required class="peer hidden branch-radio" {% if loop.first %}checked{% endif %}>
+                    <div class="peer-checked:bg-primary-50 peer-checked:border-primary-500 peer-checked:text-primary-700 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-center text-sm font-medium transition hover:bg-gray-50">
+                        {{ b.name_ar }}
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Date -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">يوم الموعد <span class="text-red-500">*</span></label>
+            <input type="date" name="appointment_date" id="appointmentDate" required
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition">
+        </div>
+
+        <!-- Time Slots -->
+        <div id="slotsContainer">
+            <label class="block text-sm font-medium text-gray-700 mb-2">اختر الموعد <span class="text-red-500">*</span></label>
+            <div id="slotsLoading" class="hidden text-center py-8 text-gray-400">
+                <svg class="animate-spin h-6 w-6 mx-auto mb-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                جاري تحميل المواعيد...
+            </div>
+            <div id="slotsEmpty" class="hidden text-center py-8">
+                <p class="text-gray-400 text-sm" id="slotsMessage">اختر اليوم أولاً لعرض المواعيد المتاحة</p>
+            </div>
+            <div id="slotsGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-2"></div>
+            <div id="waitlistBox" class="hidden mt-2 border-2 border-amber-300 bg-amber-50 rounded-xl p-4 text-center">
+                <p class="text-amber-800 text-sm font-medium mb-1">المواعيد ممتلئة في هذا اليوم</p>
+                <p class="text-amber-700 text-xs mb-3" id="waitlistCountText"></p>
+                <div class="flex flex-col sm:flex-row gap-2 justify-center">
+                    <button type="button" id="joinWaitlistBtn"
+                        class="bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+                        انضم لقائمة الانتظار
+                    </button>
+                    <a href="#" id="whatsappBtn" target="_blank" rel="noopener"
+                        class="hidden items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"></path><path d="M12.05 2c-5.523 0-10 4.477-10 10 0 1.766.46 3.492 1.335 5.008L2 22l5.132-1.346A9.96 9.96 0 0012.05 22c5.523 0 10-4.477 10-10s-4.477-10-10-10zm0 18.182a8.16 8.16 0 01-4.163-1.138l-.298-.177-3.098.812.827-3.02-.194-.31A8.19 8.19 0 013.87 12c0-4.514 3.667-8.182 8.18-8.182 4.514 0 8.182 3.668 8.182 8.182 0 4.514-3.668 8.182-8.182 8.182z"></path></svg>
+                        تواصل واتساب
+                    </a>
+                </div>
+                <p class="text-amber-600 text-xs mt-2 hidden" id="waitlistJoinedText">✓ تم اختيار الانضمام لقائمة الانتظار — سيتم التواصل معك بترتيب الحجز فور توفر ميعاد.</p>
+            </div>
+            <div id="closedDayBox" class="hidden mt-2 border-2 border-gray-200 bg-gray-50 rounded-xl p-4 text-center">
+                <p class="text-gray-600 text-sm font-medium">العيادة مغلقة في هذا اليوم، برجاء اختيار يوم آخر</p>
+            </div>
+            <input type="hidden" name="time_slot" id="selectedSlot" required>
+            <input type="hidden" name="join_waitlist" id="joinWaitlist" value="0">
+        </div>
+
+        <!-- Complaint -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">الشكوى أو ملاحظات <span class="text-gray-400">(اختياري)</span></label>
+            <textarea name="complaint" rows="2"
+                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition resize-none"
+                placeholder="اكتب شكوتك أو أي ملاحظات هنا..."></textarea>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" id="submitBtn" disabled
+            class="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition shadow-sm text-base">
+            تأكيد الحجز
+        </button>
+    </form>
+</div>
+
+<script>
+// Set minimum date to today
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('appointmentDate').setAttribute('min', today);
+
+function getSelectedBranch() {
+    const checked = document.querySelector('input[name="branch"]:checked');
+    return checked ? checked.value : '';
+}
+
+function loadSlots() {
+    const dateVal = document.getElementById('appointmentDate').value;
+    const branchVal = getSelectedBranch();
+    const slotsGrid = document.getElementById('slotsGrid');
+    const slotsEmpty = document.getElementById('slotsEmpty');
+    const slotsLoading = document.getElementById('slotsLoading');
+    const slotsMessage = document.getElementById('slotsMessage');
+    const submitBtn = document.getElementById('submitBtn');
+    const waitlistBox = document.getElementById('waitlistBox');
+    const waitlistJoinedText = document.getElementById('waitlistJoinedText');
+
+    document.getElementById('selectedSlot').value = '';
+    document.getElementById('joinWaitlist').value = '0';
+    waitlistBox.classList.add('hidden');
+    waitlistJoinedText.classList.add('hidden');
+    document.getElementById('closedDayBox').classList.add('hidden');
+
+    if (!dateVal) {
+        slotsGrid.innerHTML = '';
+        slotsEmpty.classList.remove('hidden');
+        slotsMessage.textContent = 'اختر اليوم أولاً لعرض المواعيد المتاحة';
+        submitBtn.disabled = true;
+        return;
+    }
+
+    slotsGrid.innerHTML = '';
+    slotsEmpty.classList.add('hidden');
+    slotsLoading.classList.remove('hidden');
+    submitBtn.disabled = true;
+
+    fetch('/slots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: dateVal, branch: branchVal })
+    })
+    .then(r => r.json())
+    .then(data => {
+        slotsLoading.classList.add('hidden');
+        if (data.error) {
+            slotsEmpty.classList.remove('hidden');
+            slotsMessage.textContent = data.error;
+            return;
+        }
+        if (data.slots.length === 0 && !data.is_working_day) {
+            // Clinic is simply closed this day — not a "fully booked" situation.
+            slotsEmpty.classList.remove('hidden');
+            slotsMessage.textContent = 'العيادة مغلقة في هذا اليوم';
+            document.getElementById('closedDayBox').classList.remove('hidden');
+            return;
+        }
+        if (data.slots.length === 0) {
+            slotsEmpty.classList.remove('hidden');
+            slotsMessage.textContent = 'لا توجد مواعيد متاحة في هذا اليوم';
+            waitlistBox.classList.remove('hidden');
+            const count = data.waitlist_count || 0;
+            document.getElementById('waitlistCountText').textContent =
+                count > 0 ? `يوجد ${count} شخص بالفعل على قائمة الانتظار قبلك` : 'كن أول من ينضم لقائمة الانتظار لهذا اليوم';
+            const whatsappBtn = document.getElementById('whatsappBtn');
+            if (data.whatsapp_number) {
+                const msg = encodeURIComponent(`السلام عليكم، حابب/ة أحجز موعد بس لقيت المواعيد ممتلئة يوم ${dateVal} في فرع ${branchVal === 'fayoum' ? 'الفيوم' : 'ابشواي'}`);
+                whatsappBtn.href = `https://wa.me/${data.whatsapp_number}?text=${msg}`;
+                whatsappBtn.classList.remove('hidden');
+                whatsappBtn.classList.add('inline-flex');
+            } else {
+                whatsappBtn.classList.add('hidden');
+            }
+            return;
+        }
+        data.slots.forEach(slot => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = slot;
+            btn.className = 'slot-btn px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:border-primary-500 hover:text-primary-600 hover:bg-primary-50 transition';
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.slot-btn').forEach(b => {
+                    b.classList.remove('bg-primary-50', 'border-primary-500', 'text-primary-700');
+                    b.classList.add('border-gray-200', 'text-gray-600');
+                });
+                btn.classList.add('bg-primary-50', 'border-primary-500', 'text-primary-700');
+                btn.classList.remove('border-gray-200', 'text-gray-600');
+                document.getElementById('selectedSlot').value = slot;
+                document.getElementById('joinWaitlist').value = '0';
+                submitBtn.disabled = false;
+            });
+            slotsGrid.appendChild(btn);
+        });
+    })
+    .catch(() => {
+        slotsLoading.classList.add('hidden');
+        slotsEmpty.classList.remove('hidden');
+        slotsMessage.textContent = 'حدث خطأ أثناء تحميل المواعيد';
+    });
+}
+
+document.getElementById('appointmentDate').addEventListener('change', loadSlots);
+document.querySelectorAll('.branch-radio').forEach(r => r.addEventListener('change', loadSlots));
+
+document.getElementById('joinWaitlistBtn').addEventListener('click', function() {
+    document.getElementById('joinWaitlist').value = '1';
+    document.getElementById('waitlistJoinedText').classList.remove('hidden');
+    document.getElementById('submitBtn').disabled = false;
+});
+
+// Explicit validation on submit so the form never silently fails.
+// (A number input with non-numeric text, e.g. from a stray keystroke,
+// otherwise blocks submission with no visible message.)
+document.getElementById('bookingForm').addEventListener('submit', function(e) {
+    const form = this;
+    const fullName = form.full_name.value.trim();
+    const phone = form.phone.value.trim();
+    const ageField = form.age;
+    const genderChecked = form.querySelector('input[name="gender"]:checked');
+    const branchChecked = form.querySelector('input[name="branch"]:checked');
+    const appointmentDate = form.appointment_date.value;
+    const selectedSlot = document.getElementById('selectedSlot').value;
+    const joiningWaitlist = document.getElementById('joinWaitlist').value === '1';
+
+    const errors = [];
+    if (fullName.length < 3) errors.push('يرجى إدخال الاسم الكامل (3 أحرف على الأقل)');
+    if (phone.length < 10) errors.push('يرجى إدخال رقم موبايل صحيح');
+    if (ageField.validity.badInput || !ageField.value) {
+        errors.push('حقل السن يقبل أرقام فقط، برجاء التأكد من كتابة رقم صحيح');
+    } else if (!ageField.value || Number(ageField.value) < 1 || Number(ageField.value) > 150) {
+        errors.push('يرجى إدخال سن صحيح');
+    }
+    if (!genderChecked) errors.push('يرجى اختيار النوع');
+    if (!branchChecked) errors.push('يرجى اختيار الفرع');
+    if (!appointmentDate) errors.push('يرجى اختيار اليوم');
+    if (!selectedSlot && !joiningWaitlist) errors.push('يرجى اختيار الموعد أو الانضمام لقائمة الانتظار');
+
+    if (errors.length > 0) {
+        e.preventDefault();
+        alert(errors.join('\n'));
+        if (ageField.validity.badInput) {
+            ageField.value = '';
+            ageField.focus();
+        }
+    }
+});
+</script>
+{% endblock %}
